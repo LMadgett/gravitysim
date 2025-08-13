@@ -63,8 +63,8 @@ def run_sim(num_bodies, dt, num_steps, min_radius, max_radius, min_mass, max_mas
     pygame.init()
     x_size, y_size = pygame.display.get_desktop_sizes()[0]
     screen = pygame.display.set_mode((x_size, y_size))
-    x_size = int(x_size * 0.4)
-    y_size = int(y_size * 0.4) 
+    #x_size = int(x_size * 0.4)
+    #y_size = int(y_size * 0.4) 
     pygame.display.set_caption("Gravitational Simulation")
     bodies = []
     for i in range(num_bodies):
@@ -101,7 +101,7 @@ def run_sim(num_bodies, dt, num_steps, min_radius, max_radius, min_mass, max_mas
         clock.tick(60) # Limit the frame rate to 60 FPS
 
 G = 5 # Gravitational constant
-num_bodies = 10
+num_bodies = 32
 dt = 0.01
 num_steps = 10000
 min_radius = 5
