@@ -49,7 +49,7 @@ def attract(b1, b2, G, bodies):
     dx = b2.position[0] - b1.position[0]
     dy = b2.position[1] - b1.position[1]
     distance = (dx**2 + dy**2)**0.5
-    if distance < b1.radius + b2.radius and not b1.ignored and not b2.ignored and not b1.mass == 0 and not b2.mass == 0:
+    if distance < b1.radius + b2.radius and not b1.mass == 0 and not b2.mass == 0:
         b1.velocity[0] = (b1.velocity[0] * b1.mass + b2.velocity[0] * b2.mass) / (b1.mass + b2.mass)
         b1.velocity[1] = (b1.velocity[1] * b1.mass + b2.velocity[1] * b2.mass) / (b1.mass + b2.mass)
         b1.position = ((b1.position[0] * b1.mass + b2.position[0] * b2.mass) / (b1.mass + b2.mass),
@@ -61,14 +61,14 @@ def attract(b1, b2, G, bodies):
                     (b1.colour[1] + b2.colour[1]) // 2,
                     (b1.colour[2] + b2.colour[2]) // 2)
         # Throw off debris on collision
-        num_debris = random.randint(2, 5)
+        num_debris = random.randint(3, 6)
         lesser_mass = min(b1.mass, b2.mass)
-        if not (lesser_mass == 0 or (b1.mass / b2.mass > 10 or b2.mass / b1.mass > 10)):
+        if not (lesser_mass == 0 or (b1.mass / b2.mass > 7 or b2.mass / b1.mass > 7)):
             for _ in range(num_debris):
-                debris_mass = lesser_mass * random.uniform(0.05, 0.1)
-                debris_radius = max(2, b2.radius * random.uniform(0.2, 0.5))
+                debris_mass = lesser_mass * random.uniform(0.025, 0.05)
+                debris_radius = max(2, debris_mass / 100)
                 angle = random.uniform(0, 2 * math.pi)
-                speed = random.uniform(100, 300)
+                speed = random.uniform(200, 700)
                 debris_velocity = [
                     b1.velocity[0] + speed * math.cos(angle),
                     b1.velocity[1] + speed * math.sin(angle)
@@ -83,11 +83,11 @@ def attract(b1, b2, G, bodies):
                     min(255, max(0, (b1.colour[2] + b2.colour[2]) // 2 + random.randint(-30, 30)))
                 )
                 bodies.append(body(debris_mass, debris_radius, debris_position, debris_velocity, debris_colour))
-            b1.mass += b2.mass
-            b2.mass = 0
-            b2.radius = 0
-            b2.velocity = [0, 0]
-            b2.ignored = True
+        b1.mass += b2.mass
+        b2.mass = 0
+        b2.radius = 0
+        b2.velocity = [0, 0]
+        b2.ignored = True
         return (0, 0)
     else:
         if not b1.ignored and not b2.ignored and not b1.mass == 0 and not b2.mass == 0:
@@ -148,7 +148,7 @@ def run_sim(num_bodies, dt, min_radius, max_radius, min_mass, max_mass, min_velo
         clock.tick(60) # Limit the frame rate to 60 FPS
 
 G = 5 # Gravitational constant
-num_bodies = 5
+num_bodies = 10
 dt = 0.01
 #num_steps = 10000
 min_radius = 5
