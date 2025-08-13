@@ -33,7 +33,7 @@ class body:
         elif self.position[1] < 0:
             self.position = (self.position[0], y_size)
 
-def attract(b1, b2, G, bodies):
+def attract(b1, b2, G, bodies, x_size, y_size):
     if b1.mass == 0:
         b1.ignored = True
         b1.colour = (0, 0, 0)
@@ -46,29 +46,45 @@ def attract(b1, b2, G, bodies):
         b2.radius = 0
         b2.velocity = [0, 0]
         return None
+    # Calculate dx, dy with screen wrapping
     dx = b2.position[0] - b1.position[0]
     dy = b2.position[1] - b1.position[1]
+
+    # Wrap around x axis
+    if abs(dx) > x_size / 2:
+        if dx > 0:
+            dx -= x_size
+        else:
+            dx += x_size
+
+    # Wrap around y axis
+    if abs(dy) > y_size / 2:
+        if dy > 0:
+            dy -= y_size
+        else:
+            dy += y_size
     distance = (dx**2 + dy**2)**0.5
     if distance < b1.radius + b2.radius and not b1.mass == 0 and not b2.mass == 0:
         b1.velocity[0] = (b1.velocity[0] * b1.mass + b2.velocity[0] * b2.mass) / (b1.mass + b2.mass)
         b1.velocity[1] = (b1.velocity[1] * b1.mass + b2.velocity[1] * b2.mass) / (b1.mass + b2.mass)
         b1.position = ((b1.position[0] * b1.mass + b2.position[0] * b2.mass) / (b1.mass + b2.mass),
                        (b1.position[1] * b1.mass + b2.position[1] * b2.mass) / (b1.mass + b2.mass))
-        b1.mass += b2.mass
         print(f"Collided {b1.mass} and {b2.mass} at distance {distance}")
         b1.radius = (b1.radius**3 + b2.radius**3)**(1/3)
-        b1.colour = ((b1.colour[0] + b2.colour[0]) // 2, 
-                    (b1.colour[1] + b2.colour[1]) // 2,
-                    (b1.colour[2] + b2.colour[2]) // 2)
+        b1.colour = ((b1.colour[0] * b1.mass + b2.colour[0] * b2.mass) // (b1.mass + b2.mass), 
+                    (b1.colour[1] * b1.mass + b2.colour[1] * b2.mass) // (b1.mass + b2.mass),
+                    (b1.colour[2] * b1.mass + b2.colour[2] * b2.mass) // (b1.mass + b2.mass))
+        b1.mass += b2.mass
         # Throw off debris on collision
         num_debris = random.randint(3, 6)
         lesser_mass = min(b1.mass, b2.mass)
-        if not (lesser_mass == 0 or (b1.mass / b2.mass > 7 or b2.mass / b1.mass > 7)):
+        if not (lesser_mass == 0 or (b1.mass / b2.mass > 10 or b2.mass / b1.mass > 10)):
             for _ in range(num_debris):
                 debris_mass = lesser_mass * random.uniform(0.025, 0.05)
                 debris_radius = max(2, debris_mass / 100)
                 angle = random.uniform(0, 2 * math.pi)
-                speed = random.uniform(200, 700)
+                closing_speed = (abs(b1.velocity[0]) + abs(b1.velocity[1]) + abs(b2.velocity[0]) + abs(b2.velocity[1]))
+                speed = random.uniform(closing_speed / 2, 2 * closing_speed)
                 debris_velocity = [
                     b1.velocity[0] + speed * math.cos(angle),
                     b1.velocity[1] + speed * math.sin(angle)
@@ -124,12 +140,17 @@ def run_sim(num_bodies, dt, min_radius, max_radius, min_mass, max_mass, min_velo
                 pygame.quit()
                 return
             if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_down_time = pygame.time.get_ticks()
                 mouse_pos = pygame.mouse.get_pos()
-                fixed_mass = 300
-                fixed_radius = 10
-                fixed_velocity = [0.0, 0.0]
-                fixed_colour = (255, 255, 255)
-                bodies.append(body(fixed_mass, fixed_radius, mouse_pos, fixed_velocity, fixed_colour))
+            if event.type == pygame.MOUSEBUTTONUP:
+                mouse_up_time = pygame.time.get_ticks()
+                press_duration = (mouse_up_time - mouse_down_time) / 1000.0  # seconds
+                # Scale mass and radius with press duration, clamp to reasonable values
+                mass = min(2000, max(100, 300 + press_duration * 1000))
+                radius = min(50, max(5, 10 + press_duration * 10))
+                velocity = [0.0, 0.0]
+                colour = (255, 255, 255)
+                bodies.append(body(mass, radius, mouse_pos, velocity, colour))
 
         screen.fill((0, 0, 0))
 
@@ -140,7 +161,7 @@ def run_sim(num_bodies, dt, min_radius, max_radius, min_mass, max_mass, min_velo
         for j in range(len(bodies)):
             for k in range(len(bodies)):
                 if j != k and k not in ignoredIndices and j not in ignoredIndices:
-                    ret = attract(bodies[j], bodies[k], G, bodies)
+                    ret = attract(bodies[j], bodies[k], G, bodies, x_size, y_size)
                     if ret is not None:
                         ignoredIndices.append(k)
 
