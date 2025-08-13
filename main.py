@@ -1,13 +1,13 @@
 import pygame
-import math
 import random
 
 class body:
     mass = 0.0
     radius = 0.0
     position = (0.0, 0.0)
-    velocity = (0.0, 0.0)
+    velocity = [0.0, 0.0]
     color = (0, 0, 0)
+    ignored = False
 
     def __init__(self, mass, radius, position, velocity, color):
         self.mass = mass
@@ -22,27 +22,41 @@ class body:
     def update(self, dt):
         self.position = (self.position[0] + self.velocity[0] * dt, self.position[1] + self.velocity[1] * dt)
 
-def attract(b1, b2):
-    G = 6.67430e-11  # Gravitational constant
+def attract(b1, b2, G):
     dx = b2.position[0] - b1.position[0]
     dy = b2.position[1] - b1.position[1]
     distance = (dx**2 + dy**2)**0.5
-    if distance == 0:
+    if distance < b1.radius + b2.radius:
+        b1.mass += b2.mass
+        b1.radius = (b1.radius**3 + b2.radius**3)**(1/3)
+        b1.velocity[0] = (b1.velocity[0] * b1.mass + b2.velocity[0] * b2.mass) / (b1.mass + b2.mass)
+        b1.velocity[1] = (b1.velocity[1] * b1.mass + b2.velocity[1] * b2.mass) / (b1.mass + b2.mass)
+        print(f"Collided {b1.mass} and {b2.mass} at distance {distance}")
+        b2.mass = 0
+        b2.radius = 0
+        b2.velocity = [0, 0]
+        b2.ignored = True
         return (0, 0)
-    force = G * b1.mass * b2.mass / distance**2
-    b1.velocity += (force * dx / distance / b1.mass, force * dy / distance / b1.mass)
-    b2.velocity += (-force * dx / distance / b2.mass, -force * dy / distance / b2.mass)
+    else:
+        if not b1.ignored and not b2.ignored:
+            force = G * b1.mass * b2.mass / distance**2
+            b1.velocity[0] += (force * dx / distance / b1.mass)
+            b1.velocity[1] += (force * dy / distance / b1.mass)
+            b2.velocity[0] += (-force * dx / distance / b2.mass)
+            b2.velocity[1] += (-force * dy / distance / b2.mass)
+            #print(f"Attracting {b1.mass} and {b2.mass} with force {force} at distance {distance}")
 
-def run_sim(num_bodies, x_size, y_size, dt, num_steps, min_radius, max_radius, min_mass, max_mass, min_velocity, max_velocity):
+def run_sim(num_bodies, dt, num_steps, min_radius, max_radius, min_mass, max_mass, min_velocity, max_velocity, G):
     pygame.init()
+    x_size, y_size = pygame.display.get_desktop_sizes()[0]
     screen = pygame.display.set_mode((x_size, y_size))
     pygame.display.set_caption("Gravitational Simulation")
     bodies = []
     for i in range(num_bodies):
         mass = random.uniform(min_mass, max_mass)
-        radius = random.uniform(min_radius, max_radius)
-        position = (random.uniform(0, x_size), random.uniform(0, y_size))
-        velocity = (random.uniform(min_velocity, max_velocity), random.uniform(min_velocity, max_velocity))
+        radius = (mass/max_mass) * (max_radius - min_radius) + min_radius
+        position = (random.randint(0, x_size), random.randint(0, y_size))
+        velocity = [0, 0]#(random.uniform(min_velocity, max_velocity), random.uniform(min_velocity, max_velocity))
         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         bodies.append(body(mass, radius, position, velocity, color))
 
@@ -55,25 +69,29 @@ def run_sim(num_bodies, x_size, y_size, dt, num_steps, min_radius, max_radius, m
         screen.fill((0, 0, 0))
         for b in bodies:
             b.update(dt)
+            print(f"pos: {b.position}, vel: {b.velocity}")
             b.draw(screen)
 
+        ignoredIndices = []
         for j in range(len(bodies)):
-            for k in range(j + 1, len(bodies)):
-                attract(bodies[j], bodies[k])
+            for k in range(len(bodies)):
+                if j != k and k not in ignoredIndices and j not in ignoredIndices:
+                    ret = attract(bodies[j], bodies[k], G)
+                    if ret is not None:
+                        ignoredIndices.append(k)
 
         pygame.display.flip()
         pygame.time.delay(int(dt * 1000))
 
+G = 6.67430e-9  # Gravitational constant
 num_bodies = 10
-x_size = 1024
-y_size = 1024
 dt = 0.01
-num_steps = 1000
+num_steps = 10000
 min_radius = 5
 max_radius = 20
 min_mass = 1e10
 max_mass = 1e12
-min_velocity = -10
-max_velocity = 10
-run_sim(num_bodies, x_size, y_size, dt, num_steps, min_radius, max_radius, min_mass, max_mass, min_velocity, max_velocity)
+min_velocity = -100
+max_velocity = 100
+run_sim(num_bodies, dt, num_steps, min_radius, max_radius, min_mass, max_mass, min_velocity, max_velocity, G)
 pygame.quit()
