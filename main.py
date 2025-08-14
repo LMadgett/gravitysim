@@ -154,12 +154,19 @@ def run_sim(num_bodies, dt, min_radius, max_radius, min_mass, max_mass, min_velo
             if event.type == pygame.MOUSEBUTTONUP:
                 mouse_up_time = pygame.time.get_ticks()
                 press_duration = (mouse_up_time - mouse_down_time) / 1000.0  # seconds
+                final_mouse_pos = pygame.mouse.get_pos()
+                # Calculate the distance from the initial mouse position to the final position
+                distance = math.sqrt((final_mouse_pos[0] - mouse_pos[0])**2 + (final_mouse_pos[1] - mouse_pos[1])**2)
+                speed = distance / press_duration if press_duration > 0 else 0
+                velocity = [0.0, 0.0]
+                angle = math.atan2(final_mouse_pos[1] - mouse_pos[1], final_mouse_pos[0] - mouse_pos[0])
+                if speed > 0:
+                    velocity = [speed * math.cos(angle), speed * math.sin(angle)]
                 # Scale mass and radius with press duration, clamp to reasonable values
                 mass = min(2000, max(100, 300 + press_duration * 1000))
                 radius = min(50, max(5, 10 + press_duration * 10))
-                velocity = [0.0, 0.0]
                 colour = (255, 255, 255)
-                bodies.append(body(mass, radius, mouse_pos, velocity, colour))
+                bodies.append(body(mass, radius, final_mouse_pos, velocity, colour))
 
         screen.fill((0, 0, 0))
 
