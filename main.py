@@ -139,6 +139,15 @@ def run_sim(num_bodies, dt, min_radius, max_radius, min_mass, max_mass, min_velo
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    dt *= 1.2
+                if event.key == pygame.K_LEFT:
+                    dt *= 0.8
+                if event.key == pygame.K_PLUS:
+                    G *= 1.2
+                if event.key == pygame.K_MINUS:
+                    G *= 0.8
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_down_time = pygame.time.get_ticks()
                 mouse_pos = pygame.mouse.get_pos()
@@ -176,7 +185,7 @@ min_radius = 5
 max_radius = 50
 min_mass = 100
 max_mass = 2000
-min_velocity = -300
-max_velocity = 300
+min_velocity = -500
+max_velocity = 500
 run_sim(num_bodies, dt, min_radius, max_radius, min_mass, max_mass, min_velocity, max_velocity, G)
 pygame.quit()
